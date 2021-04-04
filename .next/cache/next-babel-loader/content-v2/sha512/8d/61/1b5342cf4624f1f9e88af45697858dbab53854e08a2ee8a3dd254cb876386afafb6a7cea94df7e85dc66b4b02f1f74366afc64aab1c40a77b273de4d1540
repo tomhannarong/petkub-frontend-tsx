@@ -1,0 +1,1 @@
+{"ast":null,"code":"import { ApolloClient, InMemoryCache } from '@apollo/client';\nexport const client = new ApolloClient({\n  uri: process.env.NEXT_PUBLIC_BACKEND_URI,\n  cache: new InMemoryCache(),\n  credentials: 'include'\n});","map":null,"metadata":{},"sourceType":"module"}

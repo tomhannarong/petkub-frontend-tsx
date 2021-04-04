@@ -1,10 +1,13 @@
 import React, { useContext } from 'react'
 import Link from 'next/link'
+import { useMutation } from '@apollo/client'
 import { useRouter } from 'next/router'
 import styled from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 import { AuthContext } from '../context/AuthContextProvider'
+import { isAdmin } from '../helpers/authHelpers'
+import { SIGN_OUT } from '../apollo/mutations'
 
 interface Props {}
 
@@ -105,9 +108,32 @@ const HamMenu = styled.div`
 `
 
 const NavBar: React.FC<Props> = () => {
-  const { handleAuthAction } = useContext(AuthContext)
+  const { handleAuthAction, loggedInUser, setAuthUser } = useContext(
+    AuthContext
+  )
 
   const router = useRouter()
+
+  const [signout] = useMutation<{ signout: { message: string } }>(SIGN_OUT)
+
+  const handleSignout = async () => {
+    try {
+      const response = await signout()
+
+      if (response?.data?.signout?.message) {
+        // Set auth user to null
+        setAuthUser(null)
+
+        // Sync signout
+        window.localStorage.setItem('signout', Date.now().toString())
+
+        // Push user to home page
+        router.push('/')
+      }
+    } catch (error) {
+      alert('Sorry, cannot proceed.')
+    }
+  }
 
   return (
     <Header>
@@ -128,21 +154,35 @@ const NavBar: React.FC<Props> = () => {
             </a>
           </Link>
 
-          <Link href='/dashboard'>
-            <a className={router.pathname === '/dashboard' ? 'active' : ''}>
-              Dashboard
-            </a>
-          </Link>
+          {loggedInUser && (
+            <Link href='/dashboard'>
+              <a className={router.pathname === '/dashboard' ? 'active' : ''}>
+                Dashboard
+              </a>
+            </Link>
+          )}
 
-          <Link href='/admin'>
-            <a className={router.pathname === '/admin' ? 'active' : ''}>
-              Admin
-            </a>
-          </Link>
+          {loggedInUser && isAdmin(loggedInUser) && (
+            <Link href='/admin'>
+              <a className={router.pathname === '/admin' ? 'active' : ''}>
+                Admin
+              </a>
+            </Link>
+          )}
         </Ul>
         <Actions>
-          <button onClick={() => handleAuthAction('signin')}>Sign In</button>
-          <button onClick={() => handleAuthAction('signup')}>Sign Up</button>
+          {loggedInUser ? (
+            <button onClick={handleSignout}>Sign Out</button>
+          ) : (
+            <>
+              <button onClick={() => handleAuthAction('signin')}>
+                Sign In
+              </button>
+              <button onClick={() => handleAuthAction('signup')}>
+                Sign Up
+              </button>
+            </>
+          )}
         </Actions>
         <HamMenu>
           <FontAwesomeIcon icon={['fas', 'bars']} size='2x' />

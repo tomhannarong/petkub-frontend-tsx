@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import styled, { createGlobalStyle, ThemeProvider } from 'styled-components'
@@ -23,7 +23,6 @@ interface Props {
 
 const GlobalStyle = createGlobalStyle`
   ${dom.css()}
-
    html {
       box-sizing: border-box;
       font-size: 10px;
@@ -39,7 +38,6 @@ const GlobalStyle = createGlobalStyle`
       font-family: 'Roboto', sans-serif;
       font-weight: 400;
    }
-
    button {
     border: none;
     background: white;
@@ -49,7 +47,6 @@ const GlobalStyle = createGlobalStyle`
     border-radius: ${(props) => props.theme.radius};
     cursor: pointer;
     transition: background-color ${(props) => props.theme.transition} ease-in;
-
     &:hover {
         background: ${(props) => props.theme.colors.lightGrey};
     }
@@ -70,9 +67,13 @@ const DisplayedPage = styled.div`
 `
 
 const Layout: React.FC<Props> = ({ children }) => {
-  const { authAction } = useContext(AuthContext)
+  const { authAction, handleAuthAction } = useContext(AuthContext)
 
-  const { pathname } = useRouter()
+  const { pathname, query } = useRouter()
+
+  useEffect(() => {
+    if (query?.resetToken) handleAuthAction('reset')
+  }, [query])
 
   return (
     <ThemeProvider theme={theme}>
@@ -122,7 +123,7 @@ const Layout: React.FC<Props> = ({ children }) => {
                   {authAction === 'reset' && (
                     <>
                       <Backdrop />
-                      <ResetPassword />
+                      <ResetPassword token={query?.resetToken as string} />
                     </>
                   )}
                 </>

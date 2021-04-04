@@ -1,4 +1,7 @@
 import React from 'react'
+import { useMutation } from '@apollo/client'
+import { useForm } from 'react-hook-form'
+import Loader from 'react-loader-spinner'
 
 import Modal from './modal/Modal'
 import {
@@ -8,18 +11,33 @@ import {
   InputContainer,
   Input,
   Button,
+  StyledError,
+  StyledInform,
 } from './SignUp'
+import { REQUEST_TO_RESET_PASSWORD } from '../apollo/mutations'
 
 interface Props {}
 
 const RequestResetPassword: React.FC<Props> = () => {
+  const { register, handleSubmit } = useForm<{ email: string }>()
+
+  const [requestResetPassword, { data, loading, error }] = useMutation<
+    { requestResetPassword: { message: string } },
+    { email: string }
+  >(REQUEST_TO_RESET_PASSWORD)
+
+  const handleRequestResetPassword = handleSubmit(async ({ email }) => {
+    await requestResetPassword({ variables: { email } })
+  })
+
   return (
     <Modal>
       <FormContainer>
         <Header>
           <h4>Enter your email below to reset password.</h4>
         </Header>
-        <StyledForm>
+
+        <StyledForm onSubmit={handleRequestResetPassword}>
           <InputContainer>
             <Input
               type='text'
@@ -27,10 +45,40 @@ const RequestResetPassword: React.FC<Props> = () => {
               id='email'
               placeholder='Your email'
               autoComplete='new-password'
+              ref={register('email')}
             />
+
           </InputContainer>
-          <Button disabled>Submit</Button>
+
+          <Button
+            disabled={loading}
+            style={{ cursor: loading ? 'not-allowed' : 'pointer' }}
+          >
+            {loading ? (
+              <Loader
+                type='Oval'
+                color='white'
+                height={30}
+                width={30}
+                timeout={30000}
+              />
+            ) : (
+              'Submit'
+            )}
+          </Button>
+
+          {error && (
+            <StyledError>
+              {error.graphQLErrors[0]?.message || 'Sorry, something went wrong'}
+            </StyledError>
+          )}
         </StyledForm>
+
+        {data && (
+          <StyledInform>
+            <p>{data.requestResetPassword?.message}</p>
+          </StyledInform>
+        )}
       </FormContainer>
     </Modal>
   )

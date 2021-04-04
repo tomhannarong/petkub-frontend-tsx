@@ -1,9 +1,15 @@
 import React, { useContext } from 'react'
 import styled from 'styled-components'
+import { useRouter } from 'next/router'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useForm } from 'react-hook-form'
+import { useMutation } from '@apollo/client'
+import Loader from 'react-loader-spinner'
 
 import Modal from './modal/Modal'
 import { AuthContext } from '../context/AuthContextProvider'
+import { SIGN_UP } from '../apollo/mutations'
+import { User, SignupArgs } from '../types'
 
 interface Props {}
 
@@ -81,7 +87,7 @@ export const StyledError = styled.p`
   margin: 0;
   padding: 0;
   color: red;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 `
 
 export const StyledSwitchAction = styled.div`
@@ -154,8 +160,46 @@ export const Divider = styled.hr`
 `
 
 const SignUp: React.FC<Props> = () => {
-  const { handleAuthAction } = useContext(AuthContext)
+  const { handleAuthAction, setAuthUser } = useContext(AuthContext)
+  const { register, handleSubmit } = useForm<{
+    username: string
+    email: string
+    password: string
+  }>()
 
+  const router = useRouter()
+
+  const [signup, { loading, error }] = useMutation<
+    { signup: User },
+    SignupArgs
+  >(SIGN_UP)
+
+  const submitSignup = handleSubmit(async ({ username, email, password }) => {
+    try {
+      const response = await signup({
+        variables: { username, email, password },
+      })
+
+      if (response?.data?.signup) {
+        const { signup } = response.data
+
+        if (signup) {
+          // Close form
+          handleAuthAction('close')
+
+          // Set loggedInUser in context api
+          setAuthUser(signup)
+
+          // Push user to their dashboard
+          router.push('/dashboard')
+        }
+      }
+    } catch (error) {
+      setAuthUser(null)
+    }
+  })
+
+  console.log(loading)
   return (
     <Modal>
       <FormContainer>
@@ -176,7 +220,7 @@ const SignUp: React.FC<Props> = () => {
 
         <Divider />
 
-        <StyledForm>
+        <StyledForm onSubmit={submitSignup}>
           <p className='email_section_label'>or sign up with an email</p>
           <InputContainer>
             <label>Username</label>
@@ -186,7 +230,9 @@ const SignUp: React.FC<Props> = () => {
               id='username'
               placeholder='Your username'
               autoComplete='new-password'
+              ref={register('username')}
             />
+           
           </InputContainer>
 
           <InputContainer>
@@ -198,7 +244,9 @@ const SignUp: React.FC<Props> = () => {
               id='email'
               placeholder='Your email'
               autoComplete='new-password'
+              ref={register('email')}
             />
+
           </InputContainer>
 
           <InputContainer>
@@ -209,9 +257,33 @@ const SignUp: React.FC<Props> = () => {
               name='password'
               id='password'
               placeholder='Your password'
+              ref={register('password')}
             />
+
           </InputContainer>
-          <Button disabled>Submit</Button>
+
+          <Button
+            disabled={loading}
+            style={{ cursor: loading ? 'not-allowed' : 'pointer' }}
+          >
+            {loading ? (
+              <Loader
+                type='Oval'
+                color='white'
+                height={30}
+                width={30}
+                timeout={30000}
+              />
+            ) : (
+              'Submit'
+            )}
+          </Button>
+
+          {error && (
+            <StyledError>
+              {error.graphQLErrors[0]?.message || 'Sorry, something went wrong'}
+            </StyledError>
+          )}
         </StyledForm>
         <StyledSwitchAction>
           <p>
