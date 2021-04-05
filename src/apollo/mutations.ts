@@ -46,3 +46,23 @@ export const RESET_PASSWORD = gql`
     }
   }
 `
+
+export const UPDATE_ROLES = gql`
+  mutation UPDATE_ROLES($userId: String!, $newRoles: [String!]!) {
+    updateRoles(userId: $userId, newRoles: $newRoles) {
+      id
+      username
+      email
+      roles
+      createdAt
+    }
+  }
+`
+
+export const DELETE_USER = gql`
+  mutation DELETE_USER($userId: String!) {
+    deleteUser(userId: $userId) {
+      message
+    }
+  }
+`
